@@ -1,0 +1,43 @@
+/* =============================================================================
+   app/globals.css
+   =============================================================================
+   PURPOSE: Global styles and Tailwind imports
+   ============================================================================= */
+
+/* -----------------------------------------------------------------------------
+   TAILWIND DIRECTIVES
+   ----------------------------------------------------------------------------- */
+/*
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+*/
+
+/* -----------------------------------------------------------------------------
+   CUSTOM GLOBAL STYLES (optional)
+   ----------------------------------------------------------------------------- */
+/*
+body {
+  font-family: system-ui, sans-serif;
+}
+
+* Focus styles for accessibility *
+:focus {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+* Smooth scrolling *
+html {
+  scroll-behavior: smooth;
+}
+*/
+
+/* -----------------------------------------------------------------------------
+   NOTES
+   ----------------------------------------------------------------------------- */
+/*
+- Tailwind directives must be uncommented for Tailwind to work
+- Keep custom CSS minimal - prefer Tailwind utilities
+- Focus styles are important for keyboard navigation
+*/

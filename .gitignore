@@ -1,0 +1,39 @@
+# Dependencies
+node_modules/
+
+# Next.js
+.next/
+out/
+
+# Environment & Secrets
+.env
+.env.local
+.env.*.local
+.env.production
+.env.development
+!.env.local.example
+
+# API Keys & Secrets (catch-all)
+*.key
+*.pem
+*.secret
+*credentials*
+*api_key*
+*apikey*
+
+# Debug
+npm-debug.log*
+
+# Vercel
+.vercel
+
+# TypeScript
+*.tsbuildinfo
+next-env.d.ts
+
+# OS
+.DS_Store
+
+# IDE
+.idea/
+.vscode/

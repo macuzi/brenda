@@ -1,0 +1,10 @@
+{
+  "_comment": "Vercel deployment configuration for Brenda",
+
+  "functions": {
+    "app/api/scan/route.ts": {
+      "memory": 1024,
+      "maxDuration": 60
+    }
+  }
+}
