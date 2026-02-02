@@ -1,0 +1,13 @@
+import { test, expect } from '@playwright/test'                                                                                                                                                                  
+import { generateAltText } from '../lib/ai'                                                                                                                                                                      
+                                                                                                                                                                                                                 
+test('generateAltText returns alt text for an image', async () => {                                                                                                                                              
+  const imageUrl = 'https://framerusercontent.com/images/fpFXRHq19ovCpz7xW9BVkwlyEuA.png?width=624&height=624' 
+  const altText = await generateAltText(imageUrl)                                                                                                                                                                
+                                                                                                                                                                                                                 
+  console.log('Generated alt text:', altText)                                                                                                                                                                    
+                                                                                                                                                                                                                 
+  expect(altText).toBeDefined()                                                                                                                                                                                  
+  expect(altText.length).toBeGreaterThan(0)                                                                                                                                                                      
+  expect(altText.length).toBeLessThanOrEqual(125)                                                                                                                                                                
+})  

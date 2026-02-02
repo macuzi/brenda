@@ -1,77 +1,49 @@
-// =============================================================================
-// lib/ai.ts
-// =============================================================================
-// PURPOSE: Use Claude Vision API to generate alt text for images
-// =============================================================================
+import Anthropic from '@anthropic-ai/sdk';
+import 'dotenv/config'   
 
-// -----------------------------------------------------------------------------
-// IMPORTS NEEDED
-// -----------------------------------------------------------------------------
-// import Anthropic from '@anthropic-ai/sdk';
+import { ImageMissingAlt, ImageWithFix } from './types';
 
-// -----------------------------------------------------------------------------
-// SETUP
-// -----------------------------------------------------------------------------
-// const client = new Anthropic();
-//
-// Note: Anthropic SDK automatically reads ANTHROPIC_API_KEY from environment
-// No need to pass it explicitly
 
-// -----------------------------------------------------------------------------
-// MAIN FUNCTION: generateAltText
-// -----------------------------------------------------------------------------
-// export async function generateAltText(imageUrl: string): Promise<string>
-//
-// STEPS:
-//
-// 1. CALL CLAUDE VISION API
-//    - Use client.messages.create()
-//    - Model: 'claude-sonnet-4-20250514' (has vision capabilities)
-//    - max_tokens: 150 (alt text should be concise)
-//
-// 2. STRUCTURE THE MESSAGE
-//    - Content array with two parts:
-//      a) Image: { type: 'image', source: { type: 'url', url: imageUrl } }
-//      b) Text prompt with instructions
-//
-// 3. PROMPT ENGINEERING
-//    - Be specific about what makes good alt text:
-//      * Be descriptive but concise
-//      * Don't start with "Image of" or "Picture of"
-//      * Keep under 125 characters
-//      * If purely decorative, return "decorative"
-//      * Describe what's meaningful for context
-//
-// 4. PARSE RESPONSE
-//    - Check response.content[0].type === 'text'
-//    - Return response.content[0].text
-//    - Handle edge cases (empty response, errors)
+const client = new Anthropic({ apiKey: process.env['ANTHROPIC_API_KEY'] });
 
-// -----------------------------------------------------------------------------
-// EXAMPLE CLAUDE API CALL STRUCTURE
-// -----------------------------------------------------------------------------
-// const response = await client.messages.create({
-//   model: 'claude-sonnet-4-20250514',
-//   max_tokens: 150,
-//   messages: [{
-//     role: 'user',
-//     content: [
-//       {
-//         type: 'image',
-//         source: { type: 'url', url: imageUrl }
-//       },
-//       {
-//         type: 'text',
-//         text: `Generate concise alt text for this image.
-//                Rules:
-//                - Be specific and descriptive
-//                - Don't start with "Image of" or "Picture of"
-//                - Keep under 125 characters
-//                - If purely decorative, return exactly: decorative`
-//       }
-//     ]
-//   }]
-// });
+
+
+export async function generateAltText(imageUrl: string): Promise<string> {
+  const message = await client.messages.create({
+    model: 'claude-sonnet-4-20250514',
+    max_tokens: 150,
+    messages: [{
+      role: 'user',
+      content: [
+        {
+          type: 'image',
+          source: { 
+            type: 'url', 
+            url: imageUrl 
+          }
+        },
+        {
+          type: 'text',
+          text: `Generate concise alt text for this image.
+            Rules:
+            - Be specific and descriptive
+            - Don't start with "Image of" or "Picture of"
+            - Keep under 125 characters
+            - If purely decorative, return exactly: decorative`               
+        }
+      ]
+    }]    
+  })
+  
+  if (message.content[0].type === 'text') {
+    return message.content[0].text
+  }
+
+  throw new Error('Response did not include text')
+}
+
+
+
 
 // -----------------------------------------------------------------------------
 // ERROR HANDLING TO CONSIDER
