@@ -1,9 +1,3 @@
-// =============================================================================
-// next.config.js
-// =============================================================================
-// PURPOSE: Next.js configuration
-// =============================================================================
-
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // -----------------------------------------------------------------------------
@@ -15,13 +9,9 @@ const nextConfig = {
   //     { protocol: 'https', hostname: '**' },  // Allow all (careful in prod)
   //   ],
   // },
-
-  // -----------------------------------------------------------------------------
-  // EXPERIMENTAL FEATURES
-  // -----------------------------------------------------------------------------
-  // experimental: {
-  //   serverComponentsExternalPackages: ['playwright'],
-  // },
+  experimental: {
+    serverComponentsExternalPackages: ['playwright', '@axe-core/playwright'],
+  },
 
   // -----------------------------------------------------------------------------
   // NOTES
@@ -31,4 +21,4 @@ const nextConfig = {
   // - Keep minimal for MVP
 };
 
-module.exports = nextConfig;
+export default nextConfig;
