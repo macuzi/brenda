@@ -1,88 +1,57 @@
-// =============================================================================
-// app/api/scan/route.ts
-// =============================================================================
-// PURPOSE: API endpoint that accepts a URL and returns accessibility scan + fixes
-// =============================================================================
+import { NextRequest, NextResponse } from 'next/server';
+import { scanPage } from '@/lib/scanner';
+import { generateAltText } from '@/lib/ai';
 
-// -----------------------------------------------------------------------------
-// IMPORTS NEEDED
-// -----------------------------------------------------------------------------
-// import { NextRequest, NextResponse } from 'next/server';
-// import { scanPage } from '@/lib/scanner';
-// import { generateAltText } from '@/lib/ai';
+export async function POST (request: NextRequest) {
+  const { url } = await request.json()
+  const scanResult = await scanPage(url)
+  
+  console.log(`url: ${url}`, `scanResult: ${scanResult}`)
 
-// -----------------------------------------------------------------------------
-// API ROUTE: POST /api/scan
-// -----------------------------------------------------------------------------
-// export async function POST(request: NextRequest)
-//
-// REQUEST BODY:
-// {
-//   "url": "https://example.com"
-// }
-//
-// RESPONSE (success):
-// {
-//   "url": "https://example.com",
-//   "scannedAt": "2025-01-27T12:00:00Z",
-//   "summary": {
-//     "totalIssues": 5,
-//     "imagesMissingAlt": 2
-//   },
-//   "issues": [...],      // From axe-core
-//   "images": [...]       // With AI-generated alt text
-// }
-//
-// RESPONSE (error):
-// {
-//   "error": "Scan failed",
-//   "details": "..."
-// }
+  const imageFixes = await Promise.all(                                                                                                                                                                            
+    scanResult.images.map(async (image) => {                                                                                                                                                                       
+      try {                                                                                                                                                                                                        
+        const suggestedAlt = await generateAltText(image.src)                                                                                                                                                      
+        return {                                                                                                                                                                                                   
+          ...image,                                                                                                                                                                                                
+          suggestedAlt,                                                                                                                                                                                            
+          fix: {                                                                                                                                                                                                   
+            before: `<img src="${image.src}">`,                                                                                                                                                                    
+            after: `<img src="${image.src}" alt="${suggestedAlt}">`                                                                                                                                                
+          }                                                                                                                                                                                                        
+        }                                                                                                                                                                                                          
+      } catch (error) {                                                                                                                                                                                            
+        return {                                                                                                                                                                                                   
+          ...image,                                                                                                                                                                                                
+          suggestedAlt: 'Unable to generate alt text',                                                                                                                                                             
+          fix: {                                                                                                                                                                                                   
+            before: `<img src="${image.src}">`,                                                                                                                                                                    
+            after: `<img src="${image.src}" alt="">`                                                                                                                                                               
+          }                                                                                                                                                                                                        
+        }                                                                                                                                                                                                          
+      }                                                                                                                                                                                                            
+    })                                                                                                                                                                                                             
+  )    
 
-// -----------------------------------------------------------------------------
-// IMPLEMENTATION STEPS
-// -----------------------------------------------------------------------------
-//
-// 1. PARSE REQUEST
-//    - const { url } = await request.json()
-//    - Validate URL is provided
-//    - Optionally validate URL format
-//
-// 2. RUN SCANNER
-//    - const scanResult = await scanPage(url)
-//    - This gives us issues + images missing alt
-//
-// 3. GENERATE AI ALT TEXT
-//    - For each image in scanResult.images:
-//      const altText = await generateAltText(image.src)
-//    - Use Promise.all() for parallel processing
-//    - Build the "fix" object: { before, after }
-//
-// 4. BUILD RESPONSE
-//    - Combine scan results with AI-generated fixes
-//    - Add timestamp and summary counts
-//    - Return as JSON
-//
+  return NextResponse.json({
+    url, 
+    scannedAt: new Date().toISOString(),
+    summary: {
+      totalIssues: scanResult.issues.length,
+      imagesMissingAlt: scanResult.images.length
+    },
+    issues: scanResult.issues,
+    images: imageFixes
+  })
+}
+
+
 // 5. ERROR HANDLING
 //    - try/catch the whole thing
 //    - Return 400 for missing URL
 //    - Return 500 for scan/AI failures
 //    - Include error details for debugging
 
-// -----------------------------------------------------------------------------
-// RESPONSE STRUCTURE FOR IMAGES WITH FIXES
-// -----------------------------------------------------------------------------
-// images: [
-//   {
-//     src: "https://example.com/hero.jpg",
-//     selector: "#hero img",
-//     suggestedAlt: "A developer working at a standing desk",
-//     fix: {
-//       before: '<img src="hero.jpg">',
-//       after: '<img src="hero.jpg" alt="A developer working at a standing desk">'
-//     }
-//   }
-// ]
 
 // -----------------------------------------------------------------------------
 // PERFORMANCE CONSIDERATIONS
