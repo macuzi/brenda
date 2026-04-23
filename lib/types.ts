@@ -32,10 +32,18 @@ export interface ImageWithFix extends ImageMissingAlt {
   };
 }
 
+// An axe rule that ran and passed. Captured so the score's denominator
+// reflects the full applicable ruleset, matching Lighthouse methodology.
+export interface PassedRule {
+  id: string;
+  impact: Impact;
+}
+
 export interface ScanResult {
   url: string;
   issues: Issue[];
   images: ImageMissingAlt[];
+  passes: PassedRule[];
 }
 
 export interface ScanResponse {
@@ -48,6 +56,7 @@ export interface ScanResponse {
   };
   issues: Issue[];
   images: ImageWithFix[];
+  passes: PassedRule[];
 }
 
 export interface ScanError {

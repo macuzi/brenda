@@ -63,6 +63,7 @@ export async function POST(request: NextRequest) {
       },
       issues: scanResult.issues,
       images: imageFixes,
+      passes: scanResult.passes,
     };
 
     return NextResponse.json(response);

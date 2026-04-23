@@ -1,6 +1,6 @@
 import { chromium } from 'playwright';
 import AxeBuilder from '@axe-core/playwright';
-import type { Impact, Issue, IssueNode, ScanResult } from './types';
+import type { Impact, Issue, IssueNode, PassedRule, ScanResult } from './types';
 
 // Map axe tags like "wcag143", "wcag21aa" into the human-friendly refs the
 // assistant can cite (e.g. "WCAG 1.4.3", "WCAG 2.1 AA").
@@ -69,7 +69,16 @@ export async function scanPage(url: string): Promise<ScanResult> {
       };
     });
 
-    return { url, issues, images };
+    // Passed rules feed the Lighthouse-style score's denominator. We only
+    // need id + impact (no nodes) — the score formula weights each rule by
+    // the impact it *would* have had if it failed. Axe sometimes leaves
+    // impact null on passes; default to moderate so the rule still counts.
+    const passes: PassedRule[] = axeResults.passes.map((p) => ({
+      id: p.id,
+      impact: (p.impact as Impact) ?? 'moderate',
+    }));
+
+    return { url, issues, images, passes };
   } finally {
     await context.close();
     await browser.close();
