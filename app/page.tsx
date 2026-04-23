@@ -1,14 +1,16 @@
 'use client';
 
 import * as React from 'react';
-import { AlertCircle, Copy, Loader2 } from 'lucide-react';
+import { AlertCircle, Copy, ExternalLink, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { A11yScoreRing } from '@/components/a11y-score';
 import { AssistantProvider } from '@/components/assistant/AssistantProvider';
 import { AssistantTrigger } from '@/components/assistant/AssistantTrigger';
 import { AssistantPanel } from '@/components/assistant/AssistantPanel';
+import { calculateScore } from '@/lib/score';
 import type { ScanResponse } from '@/lib/types';
 
 export default function Home() {
@@ -126,29 +128,33 @@ export default function Home() {
 
 function ResultsSummary({ results }: { results: ScanResponse }) {
   const { summary } = results;
+  const score = React.useMemo(() => calculateScore(results), [results]);
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-4">
       <h2 className="text-sm font-medium uppercase tracking-wide text-muted-foreground">
         Summary
       </h2>
-      <dl className="grid grid-cols-2 gap-x-6 gap-y-4 text-sm sm:grid-cols-4">
-        <div className="flex flex-col gap-1">
-          <dt className="text-muted-foreground">Total issues</dt>
-          <dd className="text-xl font-semibold tabular-nums">{summary.totalIssues}</dd>
-        </div>
-        <div className="flex flex-col gap-1">
-          <dt className="text-muted-foreground">Missing alt</dt>
-          <dd className="text-xl font-semibold tabular-nums">{summary.imagesMissingAlt}</dd>
-        </div>
-        <div className="flex flex-col gap-1">
-          <dt className="text-muted-foreground">Critical</dt>
-          <dd className="text-xl font-semibold tabular-nums">{summary.byImpact.critical}</dd>
-        </div>
-        <div className="flex flex-col gap-1">
-          <dt className="text-muted-foreground">Serious</dt>
-          <dd className="text-xl font-semibold tabular-nums">{summary.byImpact.serious}</dd>
-        </div>
-      </dl>
+      <div className="flex flex-col items-start gap-6 sm:flex-row sm:items-center sm:gap-10">
+        <A11yScoreRing score={score} />
+        <dl className="grid flex-1 grid-cols-2 gap-x-6 gap-y-4 text-sm sm:grid-cols-4">
+          <div className="flex flex-col gap-1">
+            <dt className="text-muted-foreground">Total issues</dt>
+            <dd className="text-xl font-semibold tabular-nums">{summary.totalIssues}</dd>
+          </div>
+          <div className="flex flex-col gap-1">
+            <dt className="text-muted-foreground">Missing alt</dt>
+            <dd className="text-xl font-semibold tabular-nums">{summary.imagesMissingAlt}</dd>
+          </div>
+          <div className="flex flex-col gap-1">
+            <dt className="text-muted-foreground">Critical</dt>
+            <dd className="text-xl font-semibold tabular-nums">{summary.byImpact.critical}</dd>
+          </div>
+          <div className="flex flex-col gap-1">
+            <dt className="text-muted-foreground">Serious</dt>
+            <dd className="text-xl font-semibold tabular-nums">{summary.byImpact.serious}</dd>
+          </div>
+        </dl>
+      </div>
     </div>
   );
 }
@@ -196,11 +202,17 @@ function IssuesList({ results }: { results: ScanResponse }) {
               <div className="flex flex-wrap items-center gap-2">
                 <Badge variant={issue.impact}>{issue.impact}</Badge>
                 <code className="font-mono text-xs text-muted-foreground">{issue.id}</code>
-                {issue.wcagTags.length > 0 && (
-                  <span className="text-xs text-muted-foreground">
-                    {issue.wcagTags.join(' · ')}
-                  </span>
-                )}
+                {issue.wcagTags.map((tag) => (
+                  <a
+                    key={tag}
+                    href={issue.helpUrl}
+                    target="_blank"
+                    rel="noreferrer noopener"
+                    className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs text-muted-foreground transition-colors hover:border-primary hover:text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                  >
+                    {tag}
+                  </a>
+                ))}
               </div>
               <p className="text-sm leading-relaxed">{issue.help}</p>
               {issue.nodes[0] && (
@@ -212,6 +224,15 @@ function IssuesList({ results }: { results: ScanResponse }) {
                   {issue.nodes.length - 1 === 1 ? '' : 's'}
                 </p>
               )}
+              <a
+                href={issue.helpUrl}
+                target="_blank"
+                rel="noreferrer noopener"
+                className="inline-flex items-center gap-1 self-start text-xs text-primary underline decoration-primary/40 underline-offset-2 transition-colors hover:decoration-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              >
+                Learn how to fix this
+                <ExternalLink className="size-3" aria-hidden="true" />
+              </a>
             </div>
           </li>
         ))}
