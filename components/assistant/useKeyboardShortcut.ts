@@ -10,6 +10,19 @@ export interface ShortcutOptions {
   preventDefault?: boolean;
   enabled?: boolean;
   target?: Window | Document | HTMLElement | null;
+  // Skip the handler when focus is inside an input, textarea, select, or
+  // contenteditable element. Essential for no-modifier shortcuts like "/"
+  // so they don't hijack typing.
+  skipWhenTyping?: boolean;
+}
+
+function isTyping(target: EventTarget | null): boolean {
+  const el = target as HTMLElement | null;
+  if (!el) return false;
+  const tag = el.tagName;
+  if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return true;
+  if (el.isContentEditable) return true;
+  return false;
 }
 
 /**
@@ -35,11 +48,21 @@ export function useKeyboardShortcut(
       if (opts.meta === false && (e.metaKey || e.ctrlKey)) return;
       if (opts.shift != null && e.shiftKey !== opts.shift) return;
       if (opts.alt != null && e.altKey !== opts.alt) return;
+      if (opts.skipWhenTyping && isTyping(e.target)) return;
       if (opts.preventDefault) e.preventDefault();
       handlerRef.current(e);
     };
 
     target.addEventListener('keydown', onKey);
     return () => target.removeEventListener('keydown', onKey);
-  }, [opts.key, opts.meta, opts.shift, opts.alt, opts.preventDefault, opts.enabled, opts.target]);
+  }, [
+    opts.key,
+    opts.meta,
+    opts.shift,
+    opts.alt,
+    opts.preventDefault,
+    opts.enabled,
+    opts.target,
+    opts.skipWhenTyping,
+  ]);
 }

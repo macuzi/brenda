@@ -10,6 +10,7 @@ import { A11yScoreRing } from '@/components/a11y-score';
 import { AssistantProvider } from '@/components/assistant/AssistantProvider';
 import { AssistantTrigger } from '@/components/assistant/AssistantTrigger';
 import { AssistantPanel } from '@/components/assistant/AssistantPanel';
+import { useKeyboardShortcut } from '@/components/assistant/useKeyboardShortcut';
 import { calculateScore, loadLastScan, saveLastScan } from '@/lib/score';
 import {
   formatLinearTicket,
@@ -24,6 +25,19 @@ export default function Home() {
   const [results, setResults] = React.useState<ScanResponse | null>(null);
   const [previousScore, setPreviousScore] = React.useState<number | null>(null);
   const [error, setError] = React.useState('');
+  const urlInputRef = React.useRef<HTMLInputElement>(null);
+
+  // "/" focuses and selects the URL input from anywhere on the page,
+  // mirroring the GitHub/Slack/docs convention. skipWhenTyping prevents
+  // the shortcut from hijacking "/" when the user is already typing in
+  // another input (URL field, assistant composer, etc.).
+  useKeyboardShortcut(
+    { key: '/', meta: false, skipWhenTyping: true, preventDefault: true },
+    () => {
+      urlInputRef.current?.focus();
+      urlInputRef.current?.select();
+    },
+  );
 
   async function handleScan(e: React.FormEvent) {
     e.preventDefault();
@@ -90,17 +104,28 @@ export default function Home() {
               <label htmlFor="scan-url" className="sr-only">
                 URL to scan
               </label>
-              <Input
-                id="scan-url"
-                type="url"
-                required
-                inputMode="url"
-                placeholder="https://example.com"
-                value={url}
-                onChange={(e) => setUrl(e.target.value)}
-                disabled={loading}
-                className="sm:flex-1"
-              />
+              <div className="relative sm:flex-1">
+                <Input
+                  id="scan-url"
+                  ref={urlInputRef}
+                  type="url"
+                  required
+                  inputMode="url"
+                  placeholder="https://example.com"
+                  value={url}
+                  onChange={(e) => setUrl(e.target.value)}
+                  disabled={loading}
+                  className="pr-10"
+                />
+                {!url && !loading && (
+                  <kbd
+                    aria-hidden="true"
+                    className="pointer-events-none absolute right-2 top-1/2 hidden -translate-y-1/2 select-none rounded border bg-muted px-1.5 py-0.5 font-mono text-[10px] font-medium text-muted-foreground sm:inline-flex"
+                  >
+                    /
+                  </kbd>
+                )}
+              </div>
               <Button type="submit" disabled={loading || !url} className="sm:w-28">
                 {loading ? (
                   <>
