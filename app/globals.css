@@ -1,43 +1,122 @@
-/* =============================================================================
-   app/globals.css
-   =============================================================================
-   PURPOSE: Global styles and Tailwind imports
-   ============================================================================= */
-
-/* -----------------------------------------------------------------------------
-   TAILWIND DIRECTIVES
-   ----------------------------------------------------------------------------- */
-/*
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-*/
 
-/* -----------------------------------------------------------------------------
-   CUSTOM GLOBAL STYLES (optional)
-   ----------------------------------------------------------------------------- */
-/*
-body {
-  font-family: system-ui, sans-serif;
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 0 0% 9%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 9%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 9%;
+
+    /* Indigo-700 — ~9:1 on white (AAA) */
+    --primary: 231 48% 34%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 0 0% 96%;
+    --secondary-foreground: 0 0% 9%;
+
+    --muted: 0 0% 96%;
+    --muted-foreground: 0 0% 32%;
+
+    --accent: 0 0% 96%;
+    --accent-foreground: 0 0% 9%;
+
+    --destructive: 0 72% 37%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 0 0% 89%;
+    --input: 0 0% 89%;
+    --ring: 231 48% 34%;
+
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: 0 0% 9%;
+    --foreground: 0 0% 98%;
+
+    --card: 0 0% 9%;
+    --card-foreground: 0 0% 98%;
+
+    --popover: 0 0% 9%;
+    --popover-foreground: 0 0% 98%;
+
+    /* Indigo-300 — ~9.3:1 on near-black (AAA) */
+    --primary: 231 94% 85%;
+    --primary-foreground: 231 48% 18%;
+
+    --secondary: 0 0% 15%;
+    --secondary-foreground: 0 0% 98%;
+
+    --muted: 0 0% 15%;
+    --muted-foreground: 0 0% 68%;
+
+    --accent: 0 0% 15%;
+    --accent-foreground: 0 0% 98%;
+
+    --destructive: 0 72% 58%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 0 0% 20%;
+    --input: 0 0% 20%;
+    --ring: 231 94% 85%;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+    line-height: 1.7;
+  }
+
+  :focus-visible {
+    @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
+  }
+
+  code, pre, kbd, samp {
+    @apply font-mono;
+  }
 }
 
-* Focus styles for accessibility *
-:focus {
-  outline: 2px solid #3b82f6;
-  outline-offset: 2px;
+@layer utilities {
+  .measure {
+    max-width: 68ch;
+  }
+
+  /* Screen-reader-only text (visually hidden, still announced) */
+  .sr-only-focusable:not(:focus):not(:focus-within) {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
 }
 
-* Smooth scrolling *
-html {
-  scroll-behavior: smooth;
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
 }
-*/
-
-/* -----------------------------------------------------------------------------
-   NOTES
-   ----------------------------------------------------------------------------- */
-/*
-- Tailwind directives must be uncommented for Tailwind to work
-- Keep custom CSS minimal - prefer Tailwind utilities
-- Focus styles are important for keyboard navigation
-*/
