@@ -282,7 +282,7 @@ function IssuesList({ results }: { results: ScanResponse }) {
                   Learn how to fix this
                   <ExternalLink className="size-3" aria-hidden="true" />
                 </a>
-                <CreateLinearTicketButton
+                <TicketActions
                   issue={issue}
                   scanUrl={results.url}
                   scannedAt={results.scannedAt}
@@ -296,7 +296,12 @@ function IssuesList({ results }: { results: ScanResponse }) {
   );
 }
 
-function CreateLinearTicketButton({
+// Two sibling actions so neither surprises the user: Copy dumps the full
+// ticket as markdown to the clipboard (works everywhere — paste into any
+// issue tracker, Slack, a doc), Open in Linear opens Linear's Create Issue
+// modal pre-filled with title + description via URL params (convenient when
+// the user is actually signed into Linear).
+function TicketActions({
   issue,
   scanUrl,
   scannedAt,
@@ -305,33 +310,48 @@ function CreateLinearTicketButton({
   scanUrl: string;
   scannedAt: string;
 }) {
-  const [opened, setOpened] = React.useState(false);
-  const onClick = async () => {
-    const ticket = formatLinearTicket(issue, scanUrl, scannedAt);
-    // Copy a combined markdown blob as a fallback — if the user isn't
-    // signed into Linear, the new-issue URL lands on a sign-in page
-    // and they can still paste the whole ticket anywhere else.
+  const [copied, setCopied] = React.useState(false);
+  const ticket = React.useMemo(
+    () => formatLinearTicket(issue, scanUrl, scannedAt),
+    [issue, scanUrl, scannedAt],
+  );
+
+  const onCopy = async () => {
     try {
       await navigator.clipboard.writeText(ticketAsMarkdown(ticket));
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
     } catch {
-      // clipboard unavailable — URL flow still works
+      // Clipboard blocked (insecure context, permissions). Nothing graceful
+      // to do here — the "Open in Linear" button next to this one is the
+      // escape hatch.
     }
-    window.open(linearNewIssueUrl(ticket), '_blank', 'noopener,noreferrer');
-    setOpened(true);
-    setTimeout(() => setOpened(false), 1500);
   };
+
   return (
-    <Button
-      type="button"
-      size="sm"
-      variant="outline"
-      onClick={onClick}
-      aria-label={opened ? 'Opened in Linear' : 'Create ticket in Linear'}
-      className="h-7 gap-1.5 px-2 text-xs"
-    >
-      <ExternalLink className="size-3" aria-hidden="true" />
-      {opened ? 'Opened' : 'Create in Linear'}
-    </Button>
+    <>
+      <Button
+        type="button"
+        size="sm"
+        variant="outline"
+        onClick={onCopy}
+        aria-label={copied ? 'Ticket copied' : 'Copy ticket as markdown'}
+        className="h-7 gap-1.5 px-2 text-xs"
+      >
+        <Copy className="size-3" aria-hidden="true" />
+        {copied ? 'Copied' : 'Copy ticket'}
+      </Button>
+      <a
+        href={linearNewIssueUrl(ticket)}
+        target="_blank"
+        rel="noreferrer noopener"
+        className="inline-flex h-7 items-center gap-1.5 rounded-md border border-input bg-background px-2 text-xs font-medium text-foreground transition-colors hover:bg-accent hover:text-accent-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+        aria-label="Open prefilled ticket in Linear"
+      >
+        <ExternalLink className="size-3" aria-hidden="true" />
+        Open in Linear
+      </a>
+    </>
   );
 }
 
