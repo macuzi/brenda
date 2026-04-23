@@ -10,13 +10,14 @@ import { A11yScoreRing } from '@/components/a11y-score';
 import { AssistantProvider } from '@/components/assistant/AssistantProvider';
 import { AssistantTrigger } from '@/components/assistant/AssistantTrigger';
 import { AssistantPanel } from '@/components/assistant/AssistantPanel';
-import { calculateScore } from '@/lib/score';
+import { calculateScore, loadLastScan, saveLastScan } from '@/lib/score';
 import type { ScanResponse } from '@/lib/types';
 
 export default function Home() {
   const [url, setUrl] = React.useState('');
   const [loading, setLoading] = React.useState(false);
   const [results, setResults] = React.useState<ScanResponse | null>(null);
+  const [previousScore, setPreviousScore] = React.useState<number | null>(null);
   const [error, setError] = React.useState('');
 
   async function handleScan(e: React.FormEvent) {
@@ -24,6 +25,7 @@ export default function Home() {
     setLoading(true);
     setError('');
     setResults(null);
+    setPreviousScore(null);
 
     try {
       const res = await fetch('/api/scan', {
@@ -36,6 +38,15 @@ export default function Home() {
         throw new Error(text || `Scan failed: ${res.status}`);
       }
       const data: ScanResponse = await res.json();
+      const score = calculateScore(data).value;
+
+      // If we have a cached scan for the same URL, show the trend.
+      const cached = loadLastScan();
+      if (cached && cached.url === data.url) {
+        setPreviousScore(cached.score);
+      }
+      saveLastScan({ url: data.url, scannedAt: data.scannedAt, score });
+
       setResults(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unexpected error');
@@ -113,7 +124,7 @@ export default function Home() {
 
           {results && (
             <section className="mt-12 flex flex-col gap-8" aria-label="Scan results">
-              <ResultsSummary results={results} />
+              <ResultsSummary results={results} previousScore={previousScore} />
               {results.images.length > 0 && <ImageSuggestions results={results} />}
               {results.issues.length > 0 && <IssuesList results={results} />}
             </section>
@@ -126,7 +137,13 @@ export default function Home() {
   );
 }
 
-function ResultsSummary({ results }: { results: ScanResponse }) {
+function ResultsSummary({
+  results,
+  previousScore,
+}: {
+  results: ScanResponse;
+  previousScore: number | null;
+}) {
   const { summary } = results;
   const score = React.useMemo(() => calculateScore(results), [results]);
   return (
@@ -135,7 +152,7 @@ function ResultsSummary({ results }: { results: ScanResponse }) {
         Summary
       </h2>
       <div className="flex flex-col items-start gap-6 sm:flex-row sm:items-center sm:gap-10">
-        <A11yScoreRing score={score} />
+        <A11yScoreRing score={score} previous={previousScore} />
         <dl className="grid flex-1 grid-cols-2 gap-x-6 gap-y-4 text-sm sm:grid-cols-4">
           <div className="flex flex-col gap-1">
             <dt className="text-muted-foreground">Total issues</dt>

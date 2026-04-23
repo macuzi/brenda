@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { CheckCircle2, AlertTriangle, XCircle } from 'lucide-react';
+import { AlertTriangle, ArrowDown, ArrowUp, CheckCircle2, Minus, XCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { A11yScore } from '@/lib/score';
 
@@ -27,12 +27,14 @@ const ICON: Record<A11yScore['band'], React.ComponentType<{ className?: string }
 
 interface Props {
   score: A11yScore;
+  previous?: number | null;
   className?: string;
 }
 
-export function A11yScoreRing({ score, className }: Props) {
+export function A11yScoreRing({ score, previous, className }: Props) {
   const offset = CIRCUMFERENCE - (score.value / 100) * CIRCUMFERENCE;
   const Icon = ICON[score.band];
+  const delta = previous != null ? score.value - previous : null;
 
   return (
     <div className={cn('flex flex-col items-center gap-2', className)}>
@@ -41,7 +43,13 @@ export function A11yScoreRing({ score, className }: Props) {
           viewBox="0 0 120 120"
           className="size-28"
           role="img"
-          aria-label={`Accessibility score ${score.value} out of 100, ${score.label}`}
+          aria-label={
+            delta != null
+              ? `Accessibility score ${score.value} out of 100, ${score.label}, ${
+                  delta > 0 ? 'up' : delta < 0 ? 'down' : 'unchanged'
+                } ${Math.abs(delta)} from last scan`
+              : `Accessibility score ${score.value} out of 100, ${score.label}`
+          }
         >
           {/* Track */}
           <circle
@@ -82,6 +90,30 @@ export function A11yScoreRing({ score, className }: Props) {
         <Icon className="size-3.5" aria-hidden="true" />
         <span>{score.label}</span>
       </div>
+      {delta != null && (
+        <div
+          className={cn(
+            'flex items-center gap-1 text-[11px] tabular-nums',
+            delta > 0
+              ? 'text-emerald-700'
+              : delta < 0
+                ? 'text-red-700'
+                : 'text-muted-foreground',
+          )}
+          aria-hidden="true"
+        >
+          {delta > 0 ? (
+            <ArrowUp className="size-3" />
+          ) : delta < 0 ? (
+            <ArrowDown className="size-3" />
+          ) : (
+            <Minus className="size-3" />
+          )}
+          <span>
+            {delta === 0 ? 'No change' : `${Math.abs(delta)} from last scan`}
+          </span>
+        </div>
+      )}
     </div>
   );
 }

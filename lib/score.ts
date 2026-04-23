@@ -8,6 +8,42 @@ export interface A11yScore {
   label: string;
 }
 
+const HISTORY_KEY = 'brenda.lastScan.v1';
+
+export interface LastScan {
+  url: string;
+  scannedAt: string;
+  score: number;
+}
+
+export function loadLastScan(): LastScan | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = sessionStorage.getItem(HISTORY_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as LastScan;
+    if (
+      typeof parsed?.url === 'string' &&
+      typeof parsed?.scannedAt === 'string' &&
+      typeof parsed?.score === 'number'
+    ) {
+      return parsed;
+    }
+  } catch {
+    // fall through
+  }
+  return null;
+}
+
+export function saveLastScan(entry: LastScan): void {
+  if (typeof window === 'undefined') return;
+  try {
+    sessionStorage.setItem(HISTORY_KEY, JSON.stringify(entry));
+  } catch {
+    // quota / private mode — silent fail is fine
+  }
+}
+
 // Impact weights roughly follow Lighthouse's intent: one critical issue is ~5x
 // worse than one minor. Missing-alt is penalised separately per unique image,
 // capped so a heavily decorative site doesn't zero out on a single bad cluster.
