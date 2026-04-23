@@ -11,7 +11,12 @@ import { AssistantProvider } from '@/components/assistant/AssistantProvider';
 import { AssistantTrigger } from '@/components/assistant/AssistantTrigger';
 import { AssistantPanel } from '@/components/assistant/AssistantPanel';
 import { calculateScore, loadLastScan, saveLastScan } from '@/lib/score';
-import type { ScanResponse } from '@/lib/types';
+import {
+  formatLinearTicket,
+  linearNewIssueUrl,
+  ticketAsMarkdown,
+} from '@/lib/linear-ticket';
+import type { Issue, ScanResponse } from '@/lib/types';
 
 export default function Home() {
   const [url, setUrl] = React.useState('');
@@ -183,13 +188,14 @@ function ImageSuggestions({ results }: { results: ScanResponse }) {
         Suggested alt text
       </h2>
       <ul className="flex flex-col gap-4">
-        {results.images.map((img, i) => (
-          <li key={i} className="flex flex-col gap-2 rounded-md border p-3">
+        {results.images.map((img) => (
+          <li key={img.src} className="flex flex-col gap-2 rounded-md border p-3">
             <div className="flex items-start gap-3">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={img.src}
                 alt=""
+                loading="lazy"
                 className="size-16 shrink-0 rounded border bg-muted object-cover"
               />
               <p className="text-sm leading-relaxed text-foreground">
@@ -241,20 +247,66 @@ function IssuesList({ results }: { results: ScanResponse }) {
                   {issue.nodes.length - 1 === 1 ? '' : 's'}
                 </p>
               )}
-              <a
-                href={issue.helpUrl}
-                target="_blank"
-                rel="noreferrer noopener"
-                className="inline-flex items-center gap-1 self-start text-xs text-primary underline decoration-primary/40 underline-offset-2 transition-colors hover:decoration-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-              >
-                Learn how to fix this
-                <ExternalLink className="size-3" aria-hidden="true" />
-              </a>
+              <div className="flex flex-wrap items-center gap-3">
+                <a
+                  href={issue.helpUrl}
+                  target="_blank"
+                  rel="noreferrer noopener"
+                  className="inline-flex items-center gap-1 text-xs text-primary underline decoration-primary/40 underline-offset-2 transition-colors hover:decoration-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                >
+                  Learn how to fix this
+                  <ExternalLink className="size-3" aria-hidden="true" />
+                </a>
+                <CreateLinearTicketButton
+                  issue={issue}
+                  scanUrl={results.url}
+                  scannedAt={results.scannedAt}
+                />
+              </div>
             </div>
           </li>
         ))}
       </ul>
     </div>
+  );
+}
+
+function CreateLinearTicketButton({
+  issue,
+  scanUrl,
+  scannedAt,
+}: {
+  issue: Issue;
+  scanUrl: string;
+  scannedAt: string;
+}) {
+  const [opened, setOpened] = React.useState(false);
+  const onClick = async () => {
+    const ticket = formatLinearTicket(issue, scanUrl, scannedAt);
+    // Copy a combined markdown blob as a fallback — if the user isn't
+    // signed into Linear, the new-issue URL lands on a sign-in page
+    // and they can still paste the whole ticket anywhere else.
+    try {
+      await navigator.clipboard.writeText(ticketAsMarkdown(ticket));
+    } catch {
+      // clipboard unavailable — URL flow still works
+    }
+    window.open(linearNewIssueUrl(ticket), '_blank', 'noopener,noreferrer');
+    setOpened(true);
+    setTimeout(() => setOpened(false), 1500);
+  };
+  return (
+    <Button
+      type="button"
+      size="sm"
+      variant="outline"
+      onClick={onClick}
+      aria-label={opened ? 'Opened in Linear' : 'Create ticket in Linear'}
+      className="h-7 gap-1.5 px-2 text-xs"
+    >
+      <ExternalLink className="size-3" aria-hidden="true" />
+      {opened ? 'Opened' : 'Create in Linear'}
+    </Button>
   );
 }
 
