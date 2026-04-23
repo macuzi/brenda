@@ -16,6 +16,7 @@ import {
   formatLinearTicket,
   linearNewIssueUrl,
   ticketAsMarkdown,
+  type FixSuggestion,
 } from '@/lib/linear-ticket';
 import type { Issue, ScanResponse } from '@/lib/types';
 
@@ -297,6 +298,12 @@ function IssuesList({ results }: { results: ScanResponse }) {
 // issue tracker, Slack, a doc), Open in Linear opens Linear's Create Issue
 // modal pre-filled with title + description via URL params (convenient when
 // the user is actually signed into Linear).
+//
+// Both actions lazily fetch an AI-generated fix suggestion on first click
+// (cached per component instance via suggestionRef, so Copy-then-Open only
+// pays for one API call). If the fetch fails, we fall back to the
+// suggestion-less template — the ticket is still useful, just without the
+// "Example fix" block.
 function TicketActions({
   issue,
   scanUrl,
@@ -305,12 +312,31 @@ function TicketActions({
   scanUrl: string;
 }) {
   const [copied, setCopied] = React.useState(false);
-  const ticket = React.useMemo(
-    () => formatLinearTicket(issue, scanUrl),
-    [issue, scanUrl],
-  );
+  const [loading, setLoading] = React.useState(false);
+  const suggestionRef = React.useRef<Promise<FixSuggestion | null> | null>(null);
+
+  const getSuggestion = React.useCallback((): Promise<FixSuggestion | null> => {
+    if (suggestionRef.current) return suggestionRef.current;
+    suggestionRef.current = (async () => {
+      try {
+        const res = await fetch('/api/suggest-fix', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ issue, scanUrl }),
+        });
+        if (!res.ok) return null;
+        return (await res.json()) as FixSuggestion;
+      } catch {
+        return null;
+      }
+    })();
+    return suggestionRef.current;
+  }, [issue, scanUrl]);
 
   const onCopy = async () => {
+    setLoading(true);
+    const suggestion = await getSuggestion();
+    const ticket = formatLinearTicket(issue, scanUrl, suggestion ?? undefined);
     try {
       await navigator.clipboard.writeText(ticketAsMarkdown(ticket));
       setCopied(true);
@@ -319,7 +345,26 @@ function TicketActions({
       // Clipboard blocked (insecure context, permissions). Nothing graceful
       // to do here — the "Open in Linear" button next to this one is the
       // escape hatch.
+    } finally {
+      setLoading(false);
     }
+  };
+
+  // Pre-open a blank tab synchronously so the popup blocker sees a real
+  // user gesture, then navigate it to the final Linear URL once the
+  // suggestion fetch resolves. Falls back to a plain window.open if the
+  // browser refuses the blank-tab handoff.
+  const onOpenLinear = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    e.preventDefault();
+    const newTab = window.open('about:blank', '_blank', 'noopener,noreferrer');
+    setLoading(true);
+    void getSuggestion().then((suggestion) => {
+      const ticket = formatLinearTicket(issue, scanUrl, suggestion ?? undefined);
+      const url = linearNewIssueUrl(ticket);
+      if (newTab && !newTab.closed) newTab.location.href = url;
+      else window.open(url, '_blank', 'noopener,noreferrer');
+      setLoading(false);
+    });
   };
 
   return (
@@ -329,18 +374,23 @@ function TicketActions({
         size="sm"
         variant="outline"
         onClick={onCopy}
+        disabled={loading}
         aria-label={copied ? 'Ticket copied' : 'Copy ticket as markdown'}
         className="h-7 gap-1.5 px-2 text-xs"
       >
-        <Copy className="size-3" aria-hidden="true" />
-        {copied ? 'Copied' : 'Copy ticket'}
+        {loading ? (
+          <Loader2 className="size-3 animate-spin" aria-hidden="true" />
+        ) : (
+          <Copy className="size-3" aria-hidden="true" />
+        )}
+        {loading ? 'Preparing…' : copied ? 'Copied' : 'Copy ticket'}
       </Button>
       <a
-        href={linearNewIssueUrl(ticket)}
-        target="_blank"
-        rel="noreferrer noopener"
-        className="inline-flex h-7 items-center gap-1.5 rounded-md border border-input bg-background px-2 text-xs font-medium text-foreground transition-colors hover:bg-accent hover:text-accent-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+        href="#"
+        onClick={onOpenLinear}
+        className="inline-flex h-7 items-center gap-1.5 rounded-md border border-input bg-background px-2 text-xs font-medium text-foreground transition-colors hover:bg-accent hover:text-accent-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 aria-disabled:pointer-events-none aria-disabled:opacity-50"
         aria-label="Open prefilled ticket in Linear"
+        aria-disabled={loading}
       >
         <ExternalLink className="size-3" aria-hidden="true" />
         Open in Linear

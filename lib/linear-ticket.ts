@@ -5,19 +5,24 @@ export interface LinearTicket {
   description: string;
 }
 
-// User-facing impact blurb — written for a dev who owns the page and needs
-// to understand *why this matters to their users*, not the axe impact tier.
-// Generic per-level because axe doesn't expose this text; calibrated to
-// match the WCAG conformance implications of each tier.
+export interface FixSuggestion {
+  fixedHtml: string;
+  why: string;
+}
+
+// Plain-English impact blurbs aimed at non-devs (designers, PMs, QA) who
+// might be the first to read the ticket. Avoids jargon like "ARIA",
+// "semantic HTML", "assistive technology"; uses everyday phrases like
+// "have the page read aloud" and "without a mouse". One sentence each.
 const IMPACT_BLURB: Record<Impact, string> = {
   critical:
-    'Blocks users with disabilities from using core functionality. Screen-reader or keyboard-only users may be unable to complete the task on this page.',
+    "Some people won't be able to use this part of the page at all — for example, anyone who navigates without a mouse or has the page read aloud to them.",
   serious:
-    'Significantly degrades the experience for users with disabilities. Interactions work but are confusing, mis-announced, or require workarounds.',
+    "People who browse without sight or without a mouse can reach this part of the page, but it's confusing or missing information they rely on.",
   moderate:
-    'Creates friction for users with disabilities. Information is reachable but harder to parse or operate than it should be.',
+    'This part of the page is harder to use than it needs to be for people who navigate with a keyboard or have the page read aloud.',
   minor:
-    'A small accessibility issue — worth fixing, but unlikely to block or confuse users on its own.',
+    "A small rough edge. Most people won't notice, but worth fixing when convenient.",
 };
 
 // Prefix every line with "> " so multi-line axe output renders as a single
@@ -33,10 +38,13 @@ function asBlockquote(text: string): string {
 // Formats an accessibility issue as a structured Linear ticket: title and
 // description are kept separate to match Linear's data shape (two fields
 // in the "Create Issue" modal), so the title doesn't need to be cut out
-// of the pasted description.
+// of the pasted description. When a fix suggestion is provided, inserts
+// an "Example fix" + "Why this helps" block right under the failing
+// element so the reader has a concrete patch in-ticket.
 export function formatLinearTicket(
   issue: Issue,
   scanUrl: string,
+  suggestion?: FixSuggestion,
 ): LinearTicket {
   const occurrences = issue.nodes.length;
   const elementLabel = `${occurrences} element${occurrences === 1 ? '' : 's'}`;
@@ -61,6 +69,18 @@ export function formatLinearTicket(
   }
 
   lines.push('**Sample failing element:**', '```html', sampleHtml, '```', '');
+
+  if (suggestion) {
+    lines.push(
+      '**Example fix:**',
+      '```html',
+      suggestion.fixedHtml,
+      '```',
+      '',
+      `**Why this helps:** ${suggestion.why}`,
+      '',
+    );
+  }
 
   if (failureSummary) {
     lines.push('**What axe found:**', asBlockquote(failureSummary), '');
