@@ -58,14 +58,19 @@ export function formatLinearTicket(
     : null;
 
   const lines: string[] = [
-    `On \`${scanUrl}\`, **${elementLabel}** fail \`${issue.id}\` — ${issue.description}.`,
+    // Call the rule ID a "check" so readers don't mistake it for a literal
+    // attribute on the failing element (axe rule IDs like aria-allowed-attr
+    // and button-name read like HTML attributes at first glance).
+    `On \`${scanUrl}\`, **${elementLabel}** fail the \`${issue.id}\` check — ${issue.description}.`,
     '',
     `**Impact (${issue.impact}):** ${IMPACT_BLURB[issue.impact]}`,
     '',
   ];
 
+  // WCAG reference as a bare link — "WCAG 4.1.2" is self-describing, no
+  // need for a "WCAG:" label prefix.
   if (wcagLine) {
-    lines.push(`**WCAG:** ${wcagLine}`, '');
+    lines.push(wcagLine, '');
   }
 
   lines.push('**Sample failing element:**', '```html', sampleHtml, '```', '');
