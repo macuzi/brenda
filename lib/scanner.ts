@@ -30,15 +30,25 @@ export async function scanPage(url: string): Promise<ScanResult> {
 
     const axeResults = await new AxeBuilder({ page }).analyze();
 
-    const images = await page.evaluate(() =>
-      Array.from(document.images)
-        .filter((img) => !img.alt)
-        .map((img) => ({
+    // Only flag images with NO alt attribute at all. `alt=""` is WCAG-correct
+    // for decorative images (screen readers skip them) and must not be
+    // treated as a missing-alt issue. Dedupe by src so identical images
+    // reused across the page only produce one suggestion.
+    const images = await page.evaluate(() => {
+      const seen = new Set<string>();
+      const out: { src: string; alt: string | null; selector: string }[] = [];
+      for (const img of Array.from(document.images)) {
+        if (img.getAttribute('alt') !== null) continue;
+        if (seen.has(img.src)) continue;
+        seen.add(img.src);
+        out.push({
           src: img.src,
-          alt: img.alt || null,
+          alt: null,
           selector: img.id ? `#${img.id}` : `img[src="${img.src}"]`,
-        })),
-    );
+        });
+      }
+      return out;
+    });
 
     const issues: Issue[] = axeResults.violations.map((v) => {
       const nodes: IssueNode[] = v.nodes.map((n) => ({
