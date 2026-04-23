@@ -55,6 +55,7 @@ export async function scanPage(url: string): Promise<ScanResult> {
         html: n.html,
         selector: (n.target[0] as string) ?? '',
         target: n.target.map(String),
+        failureSummary: n.failureSummary,
       }));
       return {
         id: v.id,

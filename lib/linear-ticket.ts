@@ -1,8 +1,33 @@
-import type { Issue } from './types';
+import type { Impact, Issue } from './types';
 
 export interface LinearTicket {
   title: string;
   description: string;
+}
+
+// User-facing impact blurb — written for a dev who owns the page and needs
+// to understand *why this matters to their users*, not the axe impact tier.
+// Generic per-level because axe doesn't expose this text; calibrated to
+// match the WCAG conformance implications of each tier.
+const IMPACT_BLURB: Record<Impact, string> = {
+  critical:
+    'Blocks users with disabilities from using core functionality. Screen-reader or keyboard-only users may be unable to complete the task on this page.',
+  serious:
+    'Significantly degrades the experience for users with disabilities. Interactions work but are confusing, mis-announced, or require workarounds.',
+  moderate:
+    'Creates friction for users with disabilities. Information is reachable but harder to parse or operate than it should be.',
+  minor:
+    'A small accessibility issue — worth fixing, but unlikely to block or confuse users on its own.',
+};
+
+// Prefix every line with "> " so multi-line axe output renders as a single
+// markdown blockquote. axe's failureSummary is usually 2–5 lines
+// ("Fix all of the following:\n  ARIA attribute is not allowed: ...").
+function asBlockquote(text: string): string {
+  return text
+    .split('\n')
+    .map((line) => `> ${line}`)
+    .join('\n');
 }
 
 // Formats an accessibility issue as a structured Linear ticket: title and
@@ -12,38 +37,38 @@ export interface LinearTicket {
 export function formatLinearTicket(
   issue: Issue,
   scanUrl: string,
-  scannedAt: string,
 ): LinearTicket {
   const occurrences = issue.nodes.length;
-  const occurrenceLabel = `${occurrences} element${occurrences === 1 ? '' : 's'}`;
+  const elementLabel = `${occurrences} element${occurrences === 1 ? '' : 's'}`;
   const instanceSuffix = occurrences > 1 ? ` (${occurrences} instances)` : '';
   const title = `[a11y · ${issue.impact}] ${issue.help}${instanceSuffix}`;
 
   const sampleHtml = issue.nodes[0]?.html ?? '';
+  const failureSummary = issue.nodes[0]?.failureSummary?.trim();
   const wcagLine = issue.wcagTags.length
-    ? ` · **WCAG:** ${issue.wcagTags
-        .map((tag) => `[${tag}](${issue.helpUrl})`)
-        .join(', ')}`
-    : '';
-  const date = new Date(scannedAt).toISOString().slice(0, 10);
+    ? issue.wcagTags.map((tag) => `[${tag}](${issue.helpUrl})`).join(', ')
+    : null;
 
-  const description = [
-    `${issue.description}. Failing on ${occurrenceLabel} on ${scanUrl}.`,
+  const lines: string[] = [
+    `On \`${scanUrl}\`, **${elementLabel}** fail \`${issue.id}\` — ${issue.description}.`,
     '',
-    `**Rule:** \`${issue.id}\`${wcagLine}`,
+    `**Impact (${issue.impact}):** ${IMPACT_BLURB[issue.impact]}`,
     '',
-    'Sample failing element:',
-    '```html',
-    sampleHtml,
-    '```',
-    '',
-    `[Fix guide →](${issue.helpUrl})`,
-    '',
-    '---',
-    `Scanned ${date}`,
-  ].join('\n');
+  ];
 
-  return { title, description };
+  if (wcagLine) {
+    lines.push(`**WCAG:** ${wcagLine}`, '');
+  }
+
+  lines.push('**Sample failing element:**', '```html', sampleHtml, '```', '');
+
+  if (failureSummary) {
+    lines.push('**What axe found:**', asBlockquote(failureSummary), '');
+  }
+
+  lines.push(`[Fix guide →](${issue.helpUrl})`);
+
+  return { title, description: lines.join('\n') };
 }
 
 // Opens Linear's "Create Issue" modal pre-filled with the ticket. If the

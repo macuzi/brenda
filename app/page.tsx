@@ -282,11 +282,7 @@ function IssuesList({ results }: { results: ScanResponse }) {
                   Learn how to fix this
                   <ExternalLink className="size-3" aria-hidden="true" />
                 </a>
-                <TicketActions
-                  issue={issue}
-                  scanUrl={results.url}
-                  scannedAt={results.scannedAt}
-                />
+                <TicketActions issue={issue} scanUrl={results.url} />
               </div>
             </div>
           </li>
@@ -304,16 +300,14 @@ function IssuesList({ results }: { results: ScanResponse }) {
 function TicketActions({
   issue,
   scanUrl,
-  scannedAt,
 }: {
   issue: Issue;
   scanUrl: string;
-  scannedAt: string;
 }) {
   const [copied, setCopied] = React.useState(false);
   const ticket = React.useMemo(
-    () => formatLinearTicket(issue, scanUrl, scannedAt),
-    [issue, scanUrl, scannedAt],
+    () => formatLinearTicket(issue, scanUrl),
+    [issue, scanUrl],
   );
 
   const onCopy = async () => {

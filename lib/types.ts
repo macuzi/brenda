@@ -4,6 +4,11 @@ export interface IssueNode {
   html: string;
   selector: string;
   target: string[];
+  // axe-core's per-node diagnostic — e.g. "Fix all of the following: ARIA
+  // attribute is not allowed: aria-controls=...". When present, this is the
+  // most specific thing we can say about why this particular element fails,
+  // so we surface it in the Linear ticket as "What axe found".
+  failureSummary?: string;
 }
 
 export interface Issue {
