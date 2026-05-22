@@ -13,7 +13,7 @@ async function main() {
       validate: (value) => {
         if (!value) return 'Please enter a valid hex color'
 
-        if (value.length !== 3 && value.length !== 5) {
+        if (value.length !== 3 && value.length !== 6) {
           return 'Please include a valid foreground color'
         }
       }
@@ -21,7 +21,6 @@ async function main() {
 
     background: ({ results }) => text({
       message: 'What is your background color?',
-      placeholder: 'enter',
       validate: (value) => {
         if (!value) {
           return 
@@ -29,8 +28,7 @@ async function main() {
       }
     })
   })
-
-  console.log(colors)
+  const hash = '#'
 }
 
 main()
