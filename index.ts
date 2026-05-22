@@ -10,14 +10,16 @@ async function main() {
       message: 'What is your foreground color?',
       // trim and to lowercase
       validate: (value) => {
-        return checkColorInput(value)
+        if (value !== undefined) {
+          return checkColorInput(value)
+        }
       }
     }),
 
     background: ({ results }) => text({
       message: 'What is your background color?',
       validate: (value) => {
-        if (value !== undefined && results.foreground) {
+        if (value !== undefined && value !== '') {
           return checkColorInput(value)
         }
       }
@@ -27,7 +29,8 @@ async function main() {
   // for each color map and pass color to normalize
   for (const color of Object.values(colors)) {
     normalizeHexColor(color)
-  }
+    //
+  } 
 }
 
 function checkColorInput(value: string) {
