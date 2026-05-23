@@ -6,10 +6,10 @@
     "@types/bun": "^1.3.14"
   },
   "scripts": {
-    "dev": "bun run index.ts"
+    "dev": "bun run src/cli/index.ts"
   },
   "name": "brenda",
-  "module": "index.ts",
+  "module": "src/cli/index.ts",
   "type": "module",
   "private": true,
   "peerDependencies": {
