@@ -1,4 +1,4 @@
-import { text, group, select, confirm, isCancel } from "@clack/prompts";
+import { text, group, isCancel } from "@clack/prompts";
 
 
 const regex = /^[a-zA-Z0-9]*$/
@@ -8,20 +8,15 @@ async function main() {
   const colors = await group({
     foreground: () => text({
       message: 'What is your foreground color?',
-      // trim and to lowercase
       validate: (value) => {
-        if (value !== undefined) {
-          return checkColorInput(value)
-        }
+        return checkColorInput(value)
       }
     }),
 
-    background: ({ results }) => text({
+    background: () => text({
       message: 'What is your background color?',
       validate: (value) => {
-        if (value !== undefined && value !== '') {
-          return checkColorInput(value)
-        }
+        return checkColorInput(value)
       }
     })
   })
@@ -33,10 +28,13 @@ async function main() {
   } 
 }
 
-function checkColorInput(value: string) {
+function checkColorInput(value: string | undefined) {
+
    if (!value || value.length !== 3 && value.length !== 6) {
     return 'please enter a valid value'
-  }
+  } 
+
+  return undefined
 }
 
 function normalizeHexColor(value: string): string {
