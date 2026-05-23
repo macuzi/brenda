@@ -1,2 +1,2 @@
 export { checkColorInput, normalizeHexColor } from "./color-input";
-export type { ColorPair, NormalizedHexColor, RawColorInput } from "./types";
+export type { ColorPair, NormalizedHexColor } from "./types";
