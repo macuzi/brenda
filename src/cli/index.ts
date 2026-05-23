@@ -1,5 +1,5 @@
 import { group, text, cancel } from "@clack/prompts";
-import { checkColorInput, normalizeHexColor, } from "../contrast";
+import { checkColorInput, normalizeHexColor } from "../contrast";
 
 async function main() {
   // asks user for foreground/background colors
@@ -18,8 +18,13 @@ async function main() {
           return checkColorInput(value);
         },
       }),
+  },
+  {
+    onCancel: ({ results }) => {
+      cancel("Operation cancelled.");
+      process.exit(0);
+    },
   });
-
 
   // for each color map and pass color to normalize
   for (const color of Object.values(colors)) {
