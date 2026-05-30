@@ -1,18 +1,17 @@
 import type { NormalizedHexColor } from "./types";
 
-const regex = /^[a-zA-Z0-9]*$/;
+const hexColorRegex = /^#?([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
 
 export function checkColorInput(value: string | undefined) {
-  if (!value || (value.length !== 3 && value.length !== 6)) {
-    return "please enter a valid value";
+  if (!value || !hexColorRegex.test(value)) {
+    return 'Please enter a valid hex color'
   }
-
   return undefined;
 }
 
 export function normalizeHexColor(value: string): NormalizedHexColor {
   const hash = "#";
-  const colorCode = regex.test(value) ? hash.concat(value).trim() : "";
+  const colorCode = hexColorRegex.test(value) ? hash.concat(value).trim() : "";
 
   console.log(colorCode);
   return colorCode as NormalizedHexColor;
