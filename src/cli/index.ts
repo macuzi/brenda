@@ -1,5 +1,5 @@
 import { group, text, cancel } from '@clack/prompts';
-import { checkColorInput, normalizeHexColor } from '../contrast';
+import { checkColorInput, normalizeHexColor, type ColorPair } from '../contrast';
 
 async function main() {
   // asks user for foreground/background colors
@@ -28,10 +28,12 @@ async function main() {
     },
   );
 
-  // for each color map and pass color to normalize
-  for (const color of Object.values(colors)) {
-    normalizeHexColor(color);
+  const colorPair: ColorPair = {
+    background: normalizeHexColor(colors.background),
+    foreground: normalizeHexColor(colors.foreground)
   }
+
+  console.log(colorPair)
 }
 
 main();
