@@ -13,6 +13,6 @@ export function normalizeHexColor(value: string): NormalizedHexColor {
   const hash = "#";
   const colorCode = hexColorRegex.test(value) ? hash.concat(value).trim() : "";
 
-  console.log(colorCode);
+  // console.log(colorCode);
   return colorCode as NormalizedHexColor;
 }

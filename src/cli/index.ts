@@ -33,7 +33,39 @@ async function main() {
     foreground: normalizeHexColor(colors.foreground)
   }
 
-  console.log(colorPair)
+
+
+
+  function convertColorPairToRgb(colorPair: ColorPair): Object {
+    let backgroundRgb = {}
+    let foregroundRgb = {}
+    
+    if (colorPair.background.length === 7 && colorPair.foreground.length === 7) {
+
+      const background = colorPair.background.substring(1)
+      const foreground = colorPair.foreground.substring(1)
+
+      backgroundRgb = {
+        r: background.split('').slice(0, 2).join(''),
+        g: background.split('').slice(2, 4).join(''),
+        b: background.split('').slice(4, 6).join('')
+      }
+
+      foregroundRgb  = {
+        r: foreground.split('').slice(0, 2).join(''),
+        g: foreground.split('').slice(2, 4).join(''),
+        b: foreground.split('').slice(4, 6).join('')
+      }
+    }
+
+    console.log(backgroundRgb)
+    console.log(foregroundRgb)
+
+    return { backgroundRgb, foregroundRgb }
+  }
+
+  convertColorPairToRgb(colorPair)
 }
 
 main();
+
