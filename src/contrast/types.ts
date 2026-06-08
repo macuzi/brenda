@@ -1,5 +1,6 @@
 export type NormalizedHexColor = `#${string}`;
-
+export type Rgb = { r: number, g: number, b: number }
+export type NormalizeRgb = { r: number, g: number, b: number }
 export type ColorPair = {
   foreground: NormalizedHexColor;
   background: NormalizedHexColor;
@@ -7,3 +8,4 @@ export type ColorPair = {
   background: string
   foreground: string
 };
+
