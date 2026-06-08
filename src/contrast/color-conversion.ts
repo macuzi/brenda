@@ -19,67 +19,69 @@ const hexObj = {
   f: 15
 }
 
+// maps each two-character hex channel (e.g. "ea") to a decimal RGB value (0-255)
+function convertHexChannelsToDecimal(obj) {
+  for (const [key, value] of Object.entries(obj)) {
+    const [first, second] = value.split('')
+
+    const firstValue = hexObj[first]
+    const secondValue = hexObj[second]
+
+    const result = (firstValue * 16) + secondValue
+
+    obj[key] = result
+  }
+}
+
+// scales decimal RGB channels down to the 0-1 range
+function normalizeChannels(obj) {
+  obj.r = obj.r / 255
+  obj.g = obj.g / 255
+  obj.b = obj.b / 255
+}
+
+// applies WCAG sRGB gamma adjustment per channel
+function adjustChannelsForLuminance(obj) {
+  for (const [channel, value] of Object.entries(obj)) {
+    if (value <= 0.04045) {
+      obj[channel] = value / 12.92
+    } else {
+      obj[channel] = ((value + 0.055) / 1.055) ** 2.4
+    }
+  }
+}
+
+// weighted sum of adjusted channels gives relative luminance
+function getLuminance(obj) {
+  return (0.2126 * obj.r) + (0.7152 * obj.g) + (0.0722 * obj.b)
+}
+
 function convertRgbHexToDecimal(fObj, bObj) {
+  convertHexChannelsToDecimal(fObj)
+  convertHexChannelsToDecimal(bObj)
 
-  for (const [key, value] of Object.entries(fObj)) {
-    const [first, second] = value.split('')
+  normalizeChannels(fObj)
+  normalizeChannels(bObj)
 
-    const firstValue = hexObj[first]
-    const secondValue = hexObj[second]
+  adjustChannelsForLuminance(fObj)
+  adjustChannelsForLuminance(bObj)
 
-    const result = (firstValue * 16) + secondValue
-
-    fObj[key] = result
-
-  }
-
-  for (const [key, value] of Object.entries(bObj)) {
-    const [first, second] = value.split('')
-
-    const firstValue = hexObj[first]
-    const secondValue = hexObj[second]
-
-    const result = (firstValue * 16) + secondValue
-
-    bObj[key] = result
-
-  }
-  // console.log(fObj)
-  // console.log(bObj)
-  // below is related to luminance
-
-  fObj.r = fObj.r / 255
-  fObj.g = fObj.g / 255
-  fObj.b = fObj.b / 255
-
-  bObj.r = bObj.r / 255
-  bObj.g = bObj.g / 255
-  bObj.b = bObj.b / 255
-
-  
-  for (const [channel, value] of Object.entries(fObj)) {
-    if (value <= 0.04045) {
-      fObj[channel] = value / 12.92
-    } else {
-      fObj[channel] = ((value + 0.055) / 1.055) ** 2.4
-    }
-  }
-
-  for (const [channel, value] of Object.entries(bObj)) {
-    if (value <= 0.04045) {
-      bObj[channel] = value / 12.92
-    } else {
-      bObj[channel] = ((value + 0.055) / 1.055) ** 2.4
-    }
-  }
-  
-
-  const luminance = (0.2126 * fObj.r) + (0.7152 * fObj.g) + (0.0722 * fObj.b)
-  const luminanceTwo = (0.2126 * bObj.r) + (0.7152 * bObj.g) + (0.0722 * bObj.b)
-
+  const luminance = getLuminance(fObj)
+  const luminanceTwo = getLuminance(bObj)
 
   console.log(luminance)
   console.log(luminanceTwo)
+}
+
+// splits a normalized hex color into r/g/b channel pairs
+function hexToRgbChannels(hex: string) {
+  const stripped = hex.substring(1)
+  
+  return {
+    r: stripped.slice(0, 2),
+    g: stripped.slice(2, 4),
+    b: stripped.slice(4, 6)
+  }
 }
 
 export function convertColorPairToRgb(colorPair: ColorPair): Object {
@@ -87,25 +89,13 @@ export function convertColorPairToRgb(colorPair: ColorPair): Object {
   let foregroundRgb = {}
   
   if (colorPair.background.length === 7 && colorPair.foreground.length === 7) {
-
-    const background = colorPair.background.substring(1)
-    const foreground = colorPair.foreground.substring(1)
-
-    backgroundRgb = {
-      r: background.split('').slice(0, 2).join(''),
-      g: background.split('').slice(2, 4).join(''),
-      b: background.split('').slice(4, 6).join('')
-    }
-
-    foregroundRgb = {
-      r: foreground.split('').slice(0, 2).join(''),
-      g: foreground.split('').slice(2, 4).join(''),
-      b: foreground.split('').slice(4, 6).join('')
-    }
+    foregroundRgb = hexToRgbChannels(colorPair.foreground)
+    backgroundRgb = hexToRgbChannels(colorPair.background)
   }
-  // console.log(backgroundRgb)
 
   convertRgbHexToDecimal(foregroundRgb, backgroundRgb)
 
   return { foregroundRgb, backgroundRgb }
 }
+
+
