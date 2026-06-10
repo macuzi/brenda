@@ -69,8 +69,17 @@ function convertRgbHexToDecimal(fObj, bObj) {
   const luminance = getLuminance(fObj)
   const luminanceTwo = getLuminance(bObj)
 
-  console.log(luminance)
-  console.log(luminanceTwo)
+  // console.log(luminance)
+  // console.log(luminanceTwo)
+
+  compare(luminance, luminanceTwo)
+}
+
+function compare(foreground, background): boolean {
+  const luminanceResult = foreground > background ? (foreground + 0.05) / (background + 0.05) : (background + 0.05) / (foreground + 0.05)
+  
+  // console.log(luminanceResult >= 4.5)
+  return luminanceResult >= 4.5
 }
 
 // splits a normalized hex color into r/g/b channel pairs
