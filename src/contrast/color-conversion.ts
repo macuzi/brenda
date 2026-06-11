@@ -1,14 +1,15 @@
-import type { ColorPair } from "./types";
+import { log } from '@clack/prompts';
+import type { ColorPair } from './types';
 
 const hexObj = {
   0: 0,
   1: 1,
   2: 2,
-  3: 3, 
+  3: 3,
   4: 4,
   5: 5,
   6: 6,
-  7: 7, 
+  7: 7,
   8: 8,
   9: 9,
   a: 10,
@@ -16,95 +17,100 @@ const hexObj = {
   c: 12,
   d: 13,
   e: 14,
-  f: 15
-}
+  f: 15,
+};
 
 // maps each two-character hex channel (e.g. "ea") to a decimal RGB value (0-255)
 function convertHexChannelsToDecimal(obj) {
   for (const [key, value] of Object.entries(obj)) {
-    const [first, second] = value.split('')
+    const [first, second] = value.split('');
 
-    const firstValue = hexObj[first]
-    const secondValue = hexObj[second]
+    const firstValue = hexObj[first];
+    const secondValue = hexObj[second];
 
-    const result = (firstValue * 16) + secondValue
+    const result = firstValue * 16 + secondValue;
 
-    obj[key] = result
+    obj[key] = result;
   }
 }
 
 // scales decimal RGB channels down to the 0-1 range
 function normalizeChannels(obj) {
-  obj.r = obj.r / 255
-  obj.g = obj.g / 255
-  obj.b = obj.b / 255
+  obj.r = obj.r / 255;
+  obj.g = obj.g / 255;
+  obj.b = obj.b / 255;
 }
 
 // applies WCAG sRGB gamma adjustment per channel
 function adjustChannelsForLuminance(obj) {
   for (const [channel, value] of Object.entries(obj)) {
     if (value <= 0.04045) {
-      obj[channel] = value / 12.92
+      obj[channel] = value / 12.92;
     } else {
-      obj[channel] = ((value + 0.055) / 1.055) ** 2.4
+      obj[channel] = ((value + 0.055) / 1.055) ** 2.4;
     }
   }
 }
 
 // weighted sum of adjusted channels gives relative luminance
 function getLuminance(obj) {
-  return (0.2126 * obj.r) + (0.7152 * obj.g) + (0.0722 * obj.b)
+  return 0.2126 * obj.r + 0.7152 * obj.g + 0.0722 * obj.b;
 }
 
 function convertRgbHexToDecimal(fObj, bObj) {
-  convertHexChannelsToDecimal(fObj)
-  convertHexChannelsToDecimal(bObj)
+  convertHexChannelsToDecimal(fObj);
+  convertHexChannelsToDecimal(bObj);
 
-  normalizeChannels(fObj)
-  normalizeChannels(bObj)
+  normalizeChannels(fObj);
+  normalizeChannels(bObj);
 
-  adjustChannelsForLuminance(fObj)
-  adjustChannelsForLuminance(bObj)
+  adjustChannelsForLuminance(fObj);
+  adjustChannelsForLuminance(bObj);
 
-  const luminance = getLuminance(fObj)
-  const luminanceTwo = getLuminance(bObj)
+  const luminance = getLuminance(fObj);
+  const luminanceTwo = getLuminance(bObj);
 
   // console.log(luminance)
   // console.log(luminanceTwo)
 
-  compare(luminance, luminanceTwo)
+  compare(luminance, luminanceTwo);
 }
 
-function compare(foreground, background): boolean {
-  const luminanceResult = foreground > background ? (foreground + 0.05) / (background + 0.05) : (background + 0.05) / (foreground + 0.05)
-  
-  // console.log(luminanceResult >= 4.5)
-  return luminanceResult >= 4.5
+function compare(foreground, background): void {
+  const luminanceResult =
+    foreground > background
+      ? (foreground + 0.05) / (background + 0.05)
+      : (background + 0.05) / (foreground + 0.05);
+
+  const result =
+    luminanceResult >= 4.5
+      ? log.success(`${luminanceResult} — passes AA (normal text)`)
+      : log.error(`${luminanceResult} — fails AA (needs 4.5:1)`);
+
+  return result;
 }
 
 // splits a normalized hex color into r/g/b channel pairs
 function hexToRgbChannels(hex: string) {
-  const stripped = hex.substring(1)
-  
+  const stripped = hex.substring(1);
+
   return {
     r: stripped.slice(0, 2),
     g: stripped.slice(2, 4),
-    b: stripped.slice(4, 6)
-  }
+    b: stripped.slice(4, 6),
+  };
 }
 
 export function convertColorPairToRgb(colorPair: ColorPair): Object {
-  let backgroundRgb = {}
-  let foregroundRgb = {}
-  
+  let backgroundRgb = {};
+  let foregroundRgb = {};
+
   if (colorPair.background.length === 7 && colorPair.foreground.length === 7) {
-    foregroundRgb = hexToRgbChannels(colorPair.foreground)
-    backgroundRgb = hexToRgbChannels(colorPair.background)
+    foregroundRgb = hexToRgbChannels(colorPair.foreground);
+    backgroundRgb = hexToRgbChannels(colorPair.background);
   }
 
-  convertRgbHexToDecimal(foregroundRgb, backgroundRgb)
+  convertRgbHexToDecimal(foregroundRgb, backgroundRgb);
 
-  return { foregroundRgb, backgroundRgb }
+  return { foregroundRgb, backgroundRgb };
 }
-
-

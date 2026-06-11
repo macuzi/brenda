@@ -1,4 +1,4 @@
-import { group, text, cancel } from '@clack/prompts';
+import { intro, group, text, cancel } from '@clack/prompts';
 import {
   checkColorInput,
   normalizeHexColor,
@@ -7,6 +7,7 @@ import {
 } from '../contrast';
 
 async function main() {
+  intro('Brenda... welcome in');
   // asks user for foreground/background colors
   const colors = await group(
     {
@@ -35,10 +36,10 @@ async function main() {
 
   const colorPair: ColorPair = {
     background: normalizeHexColor(colors.background),
-    foreground: normalizeHexColor(colors.foreground)
-  }
+    foreground: normalizeHexColor(colors.foreground),
+  };
 
-  convertColorPairToRgb(colorPair)
+  convertColorPairToRgb(colorPair);
 }
 
 main();
