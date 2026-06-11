@@ -1,5 +1,4 @@
-import { log } from '@clack/prompts';
-import type { ColorPair } from './types';
+import type { ColorPair, ContrastResult } from './types';
 
 const hexObj = {
   0: 0,
@@ -57,7 +56,7 @@ function getLuminance(obj) {
   return 0.2126 * obj.r + 0.7152 * obj.g + 0.0722 * obj.b;
 }
 
-function convertRgbHexToDecimal(fObj, bObj) {
+function convertRgbHexToDecimal(fObj, bObj): ContrastResult {
   convertHexChannelsToDecimal(fObj);
   convertHexChannelsToDecimal(bObj);
 
@@ -70,24 +69,19 @@ function convertRgbHexToDecimal(fObj, bObj) {
   const luminance = getLuminance(fObj);
   const luminanceTwo = getLuminance(bObj);
 
-  // console.log(luminance)
-  // console.log(luminanceTwo)
-
-  compare(luminance, luminanceTwo);
+  return compare(luminance, luminanceTwo);
 }
 
-function compare(foreground, background): void {
-  const luminanceResult =
+function compare(foreground, background): ContrastResult {
+  const ratio =
     foreground > background
       ? (foreground + 0.05) / (background + 0.05)
       : (background + 0.05) / (foreground + 0.05);
 
-  const result =
-    luminanceResult >= 4.5
-      ? log.success(`${luminanceResult} — passes AA (normal text)`)
-      : log.error(`${luminanceResult} — fails AA (needs 4.5:1)`);
-
-  return result;
+  return {
+    ratio,
+    passes: ratio >= 4.5,
+  };
 }
 
 // splits a normalized hex color into r/g/b channel pairs
@@ -101,7 +95,7 @@ function hexToRgbChannels(hex: string) {
   };
 }
 
-export function convertColorPairToRgb(colorPair: ColorPair): Object {
+export function convertColorPairToRgb(colorPair: ColorPair): ContrastResult {
   let backgroundRgb = {};
   let foregroundRgb = {};
 
@@ -110,7 +104,5 @@ export function convertColorPairToRgb(colorPair: ColorPair): Object {
     backgroundRgb = hexToRgbChannels(colorPair.background);
   }
 
-  convertRgbHexToDecimal(foregroundRgb, backgroundRgb);
-
-  return { foregroundRgb, backgroundRgb };
+  return convertRgbHexToDecimal(foregroundRgb, backgroundRgb);
 }
