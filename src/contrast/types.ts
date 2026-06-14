@@ -5,6 +5,11 @@ export type ContrastResult = {
   ratio: number;
   passes: boolean;
 };
+
+export type PassSuggestion = {
+  hex: NormalizedHexColor;
+  ratio: number;
+};
 export type ColorPair =
   | {
       foreground: NormalizedHexColor;

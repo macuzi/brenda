@@ -1,108 +1,41 @@
 import type { ColorPair, ContrastResult } from './types';
+import contrastRatio from './contrastRatio';
+import { getLuminanceFromHex } from './color-math';
 
-const hexObj = {
-  0: 0,
-  1: 1,
-  2: 2,
-  3: 3,
-  4: 4,
-  5: 5,
-  6: 6,
-  7: 7,
-  8: 8,
-  9: 9,
-  a: 10,
-  b: 11,
-  c: 12,
-  d: 13,
-  e: 14,
-  f: 15,
-};
+/*
+  PATHWAY — checking if a color pair passes AA:
 
-// maps each two-character hex channel (e.g. "ea") to a decimal RGB value (0-255)
-function convertHexChannelsToDecimal(obj) {
-  for (const [key, value] of Object.entries(obj)) {
-    const [first, second] = value.split('');
+  1. convertColorPairToRgb(colorPair)
+     IN:  { foreground: "#777777", background: "#ffffff" }
+     ↓
+  2. getLuminanceFromHex(colorPair.foreground)  →  foregroundLuminance (number)
+     getLuminanceFromHex(colorPair.background)   →  backgroundLuminance (number)
+     ↓
+  3. compare(foregroundLuminance, backgroundLuminance)
+     ↓
+  4. contrastRatio(foregroundLuminance, backgroundLuminance)  →  ratio (number)
+     ↓
+  OUT: { ratio: 4.48, passes: false }
+*/
+export function convertColorPairToRgb(colorPair: ColorPair): ContrastResult {
+  const foregroundLuminance = getLuminanceFromHex(colorPair.foreground);
+  const backgroundLuminance = getLuminanceFromHex(colorPair.background);
 
-    const firstValue = hexObj[first];
-    const secondValue = hexObj[second];
-
-    const result = firstValue * 16 + secondValue;
-
-    obj[key] = result;
-  }
+  return compare(foregroundLuminance, backgroundLuminance);
 }
 
-// scales decimal RGB channels down to the 0-1 range
-function normalizeChannels(obj) {
-  obj.r = obj.r / 255;
-  obj.g = obj.g / 255;
-  obj.b = obj.b / 255;
-}
+/*
+  Takes the two brightness numbers and decides pass or fail.
 
-// applies WCAG sRGB gamma adjustment per channel
-function adjustChannelsForLuminance(obj) {
-  for (const [channel, value] of Object.entries(obj)) {
-    if (value <= 0.04045) {
-      obj[channel] = value / 12.92;
-    } else {
-      obj[channel] = ((value + 0.055) / 1.055) ** 2.4;
-    }
-  }
-}
-
-// weighted sum of adjusted channels gives relative luminance
-function getLuminance(obj) {
-  return 0.2126 * obj.r + 0.7152 * obj.g + 0.0722 * obj.b;
-}
-
-function convertRgbHexToDecimal(fObj, bObj): ContrastResult {
-  convertHexChannelsToDecimal(fObj);
-  convertHexChannelsToDecimal(bObj);
-
-  normalizeChannels(fObj);
-  normalizeChannels(bObj);
-
-  adjustChannelsForLuminance(fObj);
-  adjustChannelsForLuminance(bObj);
-
-  const luminance = getLuminance(fObj);
-  const luminanceTwo = getLuminance(bObj);
-
-  return compare(luminance, luminanceTwo);
-}
-
-function compare(foreground, background): ContrastResult {
-  const ratio =
-    foreground > background
-      ? (foreground + 0.05) / (background + 0.05)
-      : (background + 0.05) / (foreground + 0.05);
+  IN:  foreground — brightness of the text color
+  IN:  background — brightness of the background color
+  OUT: { ratio, passes } where passes is true if ratio >= 4.5 (AA normal text)
+*/
+function compare(foreground: number, background: number): ContrastResult {
+  const ratio = contrastRatio(foreground, background);
 
   return {
     ratio,
     passes: ratio >= 4.5,
   };
-}
-
-// splits a normalized hex color into r/g/b channel pairs
-function hexToRgbChannels(hex: string) {
-  const stripped = hex.substring(1);
-
-  return {
-    r: stripped.slice(0, 2),
-    g: stripped.slice(2, 4),
-    b: stripped.slice(4, 6),
-  };
-}
-
-export function convertColorPairToRgb(colorPair: ColorPair): ContrastResult {
-  let backgroundRgb = {};
-  let foregroundRgb = {};
-
-  if (colorPair.background.length === 7 && colorPair.foreground.length === 7) {
-    foregroundRgb = hexToRgbChannels(colorPair.foreground);
-    backgroundRgb = hexToRgbChannels(colorPair.background);
-  }
-
-  return convertRgbHexToDecimal(foregroundRgb, backgroundRgb);
 }
