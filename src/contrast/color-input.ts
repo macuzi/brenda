@@ -10,9 +10,8 @@ export function checkColorInput(value: string | undefined) {
 }
 
 export function normalizeHexColor(value: string): NormalizedHexColor {
-  const hash = '#';
-  const colorCode = hexColorRegex.test(value) ? hash.concat(value).trim() : '';
+  const trimmed = value.trim();
+  const withHash = trimmed.startsWith('#') ? trimmed : `#${trimmed}`;
 
-  // console.log(colorCode);
-  return colorCode as NormalizedHexColor;
+  return withHash.toLowerCase() as NormalizedHexColor;
 }
