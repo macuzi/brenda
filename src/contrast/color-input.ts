@@ -12,6 +12,17 @@ export function checkColorInput(value: string | undefined) {
 export function normalizeHexColor(value: string): NormalizedHexColor {
   const trimmed = value.trim();
   const withHash = trimmed.startsWith('#') ? trimmed : `#${trimmed}`;
+  const lower = withHash.toLowerCase();
+  const stripped = lower.slice(1);
 
-  return withHash.toLowerCase() as NormalizedHexColor;
+  if (stripped.length === 3) {
+    const expanded = stripped
+      .split('')
+      .map((channel) => channel + channel)
+      .join('');
+
+    return `#${expanded}` as NormalizedHexColor;
+  }
+
+  return lower as NormalizedHexColor;
 }

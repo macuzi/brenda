@@ -8,6 +8,7 @@
   },
   "scripts": {
     "dev": "bun run src/cli/index.ts",
+    "test": "bun test",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
   },
