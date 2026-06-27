@@ -17,23 +17,6 @@ Out of scope for this release:
 - UI component audits
 - `brenda ask` (planned future milestone)
 
-## Prerequisites
-
-- [Bun](https://bun.sh)
-
-## Run
-
-```sh
-bun install
-bun run dev
-```
-
-## Test
-
-```sh
-bun test
-```
-
 ## Supported input
 
 - 3- or 6-digit hex colors
@@ -54,7 +37,3 @@ bun test
 Closest AA text color: #767676 (4.54:1) — shifts your foreground as little as possible while passing
 Closest AAA text color: #595959 (7.00:1)
 ```
-
-## UI
-
-The SLC uses [@clack/prompts](https://github.com/natemoo-re/clack) for the terminal UI. A future presentation-layer refresh may use [Bombshell](https://bomb.sh/docs); contrast logic stays separate from UI.
