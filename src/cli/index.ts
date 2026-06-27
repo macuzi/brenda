@@ -38,19 +38,19 @@ function formatRatio(ratio: number) {
   8. Print the suggestions to the terminal
 */
 async function main() {
-  intro('Brenda... welcome in');
+  intro('Brenda — check text contrast against WCAG AA');
   const colors = await group(
     {
       foreground: () =>
         text({
-          message: 'What is your foreground color?',
+          message: 'Text color (foreground hex)',
           validate: (value) => {
             return checkColorInput(value);
           },
         }),
       background: () =>
         text({
-          message: 'What is your background color?',
+          message: 'Surface color (background hex)',
           validate: (value) => {
             return checkColorInput(value);
           },
@@ -70,11 +70,16 @@ async function main() {
   };
 
   const result = convertColorPairToRgb(colorPair);
+  const pairLabel = `${colorPair.foreground} on ${colorPair.background}`;
 
   if (result.passes) {
-    log.success(`${formatRatio(result.ratio)} — passes AA (normal text)`);
+    log.success(
+      `${pairLabel}: ${formatRatio(result.ratio)} — passes WCAG AA normal text (4.5:1)`,
+    );
   } else {
-    log.error(`${formatRatio(result.ratio)} — fails AA (needs 4.5:1)`);
+    log.error(
+      `${pairLabel}: ${formatRatio(result.ratio)} — fails WCAG AA normal text (needs 4.5:1)`,
+    );
 
     const aaSuggestion = suggestPassingForeground(
       colorPair.foreground,
@@ -84,7 +89,7 @@ async function main() {
 
     if (aaSuggestion) {
       log.info(
-        `Try ${aaSuggestion.hex} for AA normal text (${formatRatio(aaSuggestion.ratio)})`,
+        `Closest AA text color: ${aaSuggestion.hex} (${formatRatio(aaSuggestion.ratio)}) — shifts your foreground as little as possible while passing`,
       );
     }
 
@@ -96,7 +101,13 @@ async function main() {
 
     if (aaaSuggestion && aaaSuggestion.hex !== aaSuggestion?.hex) {
       log.info(
-        `Try ${aaaSuggestion.hex} for AAA normal text (${formatRatio(aaaSuggestion.ratio)})`,
+        `Closest AAA text color: ${aaaSuggestion.hex} (${formatRatio(aaaSuggestion.ratio)})`,
+      );
+    }
+
+    if (!aaSuggestion && !aaaSuggestion) {
+      log.warn(
+        'No passing foreground found for this background — try a different text or surface color',
       );
     }
   }
