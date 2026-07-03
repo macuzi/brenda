@@ -17,6 +17,36 @@ Out of scope for this release:
 - UI component audits
 - `brenda ask` (planned future milestone)
 
+<<<<<<< Updated upstream
+=======
+## Prerequisites
+
+- [Bun](https://bun.sh)
+
+## Run
+
+```sh
+bun install
+bun run dev                                      # interactive: brenda compare
+bun run src/cli/index.ts compare #777777 #ffffff # args mode
+```
+
+After verifying locally, install the global command:
+
+```sh
+bun link
+brenda compare                                   # or ~/.bun/bin/brenda compare
+```
+
+If `brenda` is not found, add `~/.bun/bin` to your PATH.
+
+## Test
+
+```sh
+bun test
+```
+
+>>>>>>> Stashed changes
 ## Supported input
 
 - 3- or 6-digit hex colors
