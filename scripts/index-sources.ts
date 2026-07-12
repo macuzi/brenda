@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { Glob } from 'bun';
 
 const glob = new Glob('**/*.md');
@@ -38,13 +39,8 @@ function parseSourceFile(text: string): {
   };
 }
 
-for await (const relativePath of glob.scan(sourceRoot)) {
-  const filePath = `${sourceRoot}/${relativePath}`;
-  const text = await Bun.file(filePath).text();
-  const { metadata, body } = parseSourceFile(text);
-  const chunks = chunkText(body);
-
-  console.log(filePath, metadata.title, `${chunks.length} chunks`);
+function stableChunkId(url: string, chunkIndex: number): string {
+  return createHash('sha256').update(`${url}:${chunkIndex}`).digest('hex');
 }
 
 function chunkText(text: string, maxLength = 800): string[] {
@@ -72,4 +68,16 @@ function chunkText(text: string, maxLength = 800): string[] {
   }
 
   return chunks;
+}
+
+for await (const relativePath of glob.scan(sourceRoot)) {
+  const filePath = `${sourceRoot}/${relativePath}`;
+  const text = await Bun.file(filePath).text();
+  const { metadata, body } = parseSourceFile(text);
+  const chunks = chunkText(body);
+
+  for (const [chunkIndex, chunk] of chunks.entries()) {
+    const id = stableChunkId(metadata.url, chunkIndex);
+    console.log(id, metadata.title, `chunk ${chunkIndex}`, chunk.length);
+  }
 }
