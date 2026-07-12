@@ -3,6 +3,33 @@ import { Glob } from 'bun';
 
 const glob = new Glob('**/*.md');
 const sourceRoot = 'data/sources';
+const OLLAMA_EMBED_MODEL = 'nomic-embed-text';
+
+function ollamaBaseUrl(): string {
+  const host = process.env.OLLAMA_HOST ?? 'http://localhost:11434';
+  if (host.startsWith('http://') || host.startsWith('https://')) {
+    return host;
+  }
+  return `http://${host}`;
+}
+
+async function embedTexts(texts: string[]): Promise<number[][]> {
+  const response = await fetch(`${ollamaBaseUrl()}/api/embed`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: OLLAMA_EMBED_MODEL,
+      input: texts,
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Ollama embed failed: ${response.status}`);
+  }
+
+  const data = (await response.json()) as { embeddings: number[][] };
+  return data.embeddings;
+}
 
 type SourceMetadata = {
   source: string;
@@ -75,9 +102,17 @@ for await (const relativePath of glob.scan(sourceRoot)) {
   const text = await Bun.file(filePath).text();
   const { metadata, body } = parseSourceFile(text);
   const chunks = chunkText(body);
+  const embeddings = await embedTexts(chunks);
 
   for (const [chunkIndex, chunk] of chunks.entries()) {
     const id = stableChunkId(metadata.url, chunkIndex);
-    console.log(id, metadata.title, `chunk ${chunkIndex}`, chunk.length);
+    const embedding = embeddings[chunkIndex];
+    console.log(
+      id,
+      metadata.title,
+      `chunk ${chunkIndex}`,
+      `${chunk.length} chars`,
+      `${embedding.length} dims`,
+    );
   }
 }
