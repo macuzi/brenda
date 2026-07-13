@@ -1,9 +1,12 @@
 import { createHash } from 'node:crypto';
+import { CloudClient } from 'chromadb';
 import { Glob } from 'bun';
+import { externalEmbeddings } from '../src/ask/chroma-embedding';
 
 const glob = new Glob('**/*.md');
 const sourceRoot = 'data/sources';
 const OLLAMA_EMBED_MODEL = 'nomic-embed-text';
+const COLLECTION_NAME = 'brenda-a11y';
 
 function ollamaBaseUrl(): string {
   const host = process.env.OLLAMA_HOST ?? 'http://localhost:11434';
@@ -29,6 +32,34 @@ async function embedTexts(texts: string[]): Promise<number[][]> {
 
   const data = (await response.json()) as { embeddings: number[][] };
   return data.embeddings;
+}
+
+function requireEnv(name: string): string {
+  const value = process.env[name];
+  if (!value) {
+    throw new Error(`Missing ${name}. Check your .env file.`);
+  }
+  return value;
+}
+
+function createChromaClient(): CloudClient {
+  return new CloudClient({
+    apiKey: requireEnv('CHROMA_API_KEY'),
+    tenant: requireEnv('CHROMA_TENANT'),
+    database: requireEnv('CHROMA_DATABASE'),
+    host: process.env.CHROMA_HOST ?? 'api.trychroma.com',
+  });
+}
+
+function toChunkMetadata(metadata: SourceMetadata, chunkIndex: number) {
+  return {
+    source: metadata.source,
+    topic: metadata.topic,
+    title: metadata.title,
+    url: metadata.url,
+    chunk_index: chunkIndex,
+    ...(metadata.wcag_sc ? { wcag_sc: metadata.wcag_sc } : {}),
+  };
 }
 
 type SourceMetadata = {
@@ -97,6 +128,14 @@ function chunkText(text: string, maxLength = 800): string[] {
   return chunks;
 }
 
+const client = createChromaClient();
+const collection = await client.getOrCreateCollection({
+  name: COLLECTION_NAME,
+  embeddingFunction: externalEmbeddings,
+});
+
+let totalUpserted = 0;
+
 for await (const relativePath of glob.scan(sourceRoot)) {
   const filePath = `${sourceRoot}/${relativePath}`;
   const text = await Bun.file(filePath).text();
@@ -104,15 +143,25 @@ for await (const relativePath of glob.scan(sourceRoot)) {
   const chunks = chunkText(body);
   const embeddings = await embedTexts(chunks);
 
-  for (const [chunkIndex, chunk] of chunks.entries()) {
-    const id = stableChunkId(metadata.url, chunkIndex);
-    const embedding = embeddings[chunkIndex];
-    console.log(
-      id,
-      metadata.title,
-      `chunk ${chunkIndex}`,
-      `${chunk.length} chars`,
-      `${embedding.length} dims`,
-    );
-  }
+  const ids = chunks.map((_, chunkIndex) =>
+    stableChunkId(metadata.url, chunkIndex),
+  );
+  const metadatas = chunks.map((_, chunkIndex) =>
+    toChunkMetadata(metadata, chunkIndex),
+  );
+
+  await collection.upsert({
+    ids,
+    embeddings,
+    documents: chunks,
+    metadatas,
+  });
+
+  totalUpserted += chunks.length;
+  console.log(`Upserted ${chunks.length} chunks for ${metadata.title}`);
 }
+
+const collectionCount = await collection.count();
+console.log(
+  `Done. ${totalUpserted} chunks upserted into ${COLLECTION_NAME}. Collection count: ${collectionCount}`,
+);
