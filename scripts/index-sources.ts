@@ -1,4 +1,7 @@
+// Must be first so Sentry is initialized before any other module loads.
+import '../src/instrument';
 import { createHash } from 'node:crypto';
+import * as Sentry from '@sentry/bun';
 import { CloudClient } from 'chromadb';
 import { Glob } from 'bun';
 import { externalEmbeddings } from '../src/ask/chroma-embedding';
@@ -128,40 +131,50 @@ function chunkText(text: string, maxLength = 800): string[] {
   return chunks;
 }
 
-const client = createChromaClient();
-const collection = await client.getOrCreateCollection({
-  name: COLLECTION_NAME,
-  embeddingFunction: externalEmbeddings,
-});
-
-let totalUpserted = 0;
-
-for await (const relativePath of glob.scan(sourceRoot)) {
-  const filePath = `${sourceRoot}/${relativePath}`;
-  const text = await Bun.file(filePath).text();
-  const { metadata, body } = parseSourceFile(text);
-  const chunks = chunkText(body);
-  const embeddings = await embedTexts(chunks);
-
-  const ids = chunks.map((_, chunkIndex) =>
-    stableChunkId(metadata.url, chunkIndex),
-  );
-  const metadatas = chunks.map((_, chunkIndex) =>
-    toChunkMetadata(metadata, chunkIndex),
-  );
-
-  await collection.upsert({
-    ids,
-    embeddings,
-    documents: chunks,
-    metadatas,
+try {
+  const client = createChromaClient();
+  const collection = await client.getOrCreateCollection({
+    name: COLLECTION_NAME,
+    embeddingFunction: externalEmbeddings,
   });
 
-  totalUpserted += chunks.length;
-  console.log(`Upserted ${chunks.length} chunks for ${metadata.title}`);
-}
+  let totalUpserted = 0;
 
-const collectionCount = await collection.count();
-console.log(
-  `Done. ${totalUpserted} chunks upserted into ${COLLECTION_NAME}. Collection count: ${collectionCount}`,
-);
+  for await (const relativePath of glob.scan(sourceRoot)) {
+    const filePath = `${sourceRoot}/${relativePath}`;
+    const text = await Bun.file(filePath).text();
+    const { metadata, body } = parseSourceFile(text);
+    const chunks = chunkText(body);
+    const embeddings = await embedTexts(chunks);
+
+    const ids = chunks.map((_, chunkIndex) =>
+      stableChunkId(metadata.url, chunkIndex),
+    );
+    const metadatas = chunks.map((_, chunkIndex) =>
+      toChunkMetadata(metadata, chunkIndex),
+    );
+
+    await collection.upsert({
+      ids,
+      embeddings,
+      documents: chunks,
+      metadatas,
+    });
+
+    totalUpserted += chunks.length;
+    console.log(`Upserted ${chunks.length} chunks for ${metadata.title}`);
+  }
+
+  const collectionCount = await collection.count();
+  console.log(
+    `Done. ${totalUpserted} chunks upserted into ${COLLECTION_NAME}. Collection count: ${collectionCount}`,
+  );
+} catch (error) {
+  const message = error instanceof Error ? error.message : String(error);
+  console.error(message);
+  Sentry.captureException(error);
+  // Flush before exiting — the process exits too fast for the background
+  // transport to send buffered events otherwise.
+  await Sentry.flush(2000);
+  process.exit(1);
+}

@@ -1,4 +1,6 @@
 #!/usr/bin/env bun
+// Must be first so Sentry is initialized before any other module loads.
+import '../instrument';
 import { Command } from 'commander';
 import { runCompare } from './commands/compare';
 import { runAsk } from './commands/ask';

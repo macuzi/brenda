@@ -4,6 +4,7 @@
   },
   "dependencies": {
     "@clack/prompts": "^1.4.0",
+    "@sentry/bun": "^10.68.0",
     "chromadb": "^3.5.0",
     "commander": "^15.0.0"
   },
