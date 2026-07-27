@@ -1,3 +1,4 @@
+import * as Sentry from '@sentry/bun';
 import { askQuestion } from '../../ask';
 
 function formatSource(title: string, url: string, wcagSc?: string): string {
@@ -7,7 +8,9 @@ function formatSource(title: string, url: string, wcagSc?: string): string {
 
 export async function runAsk(question: string) {
   if (!question.trim()) {
-    console.error('Provide a question, e.g. brenda ask "Is placeholder text enough for a label?"');
+    console.error(
+      'Provide a question, e.g. brenda ask "Is placeholder text enough for a label?"',
+    );
     process.exit(1);
   }
 
@@ -33,6 +36,10 @@ export async function runAsk(question: string) {
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     console.error(message);
+    Sentry.captureException(error);
+    // Flush before exiting — the CLI process exits too fast for the
+    // background transport to send buffered events otherwise.
+    await Sentry.flush(2000);
     process.exit(1);
   }
 }
